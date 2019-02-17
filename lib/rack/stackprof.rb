@@ -11,7 +11,8 @@ class Rack::Stackprof
   #   Request paths to save profile. If this option is not nil nor empty,
   #   requests only matching the path are profiled.
   #   This is must be String which is valid as a Regexp, or Regexp
-  def initialize(app, options = {})
+  # @param [Hash] stackprof_options
+  def initialize(app, options = {}, stackprof_options = {})
     @app = app
     @profile_interval_seconds = options.fetch(:profile_interval_seconds)
     @sampling_interval_microseconds = options.fetch(:sampling_interval_microseconds)
@@ -25,6 +26,7 @@ class Rack::Stackprof
                                 Regexp.compile(include_path)
                               end
                             end
+    @stackprof_options = {mode: :wall, interval: @sampling_interval_microseconds}.merge(stackprof_options)
     StackProf::Middleware.path = options.fetch(:result_directory) # for `StackProf::Middleware.save`
   end
 
@@ -52,7 +54,7 @@ class Rack::Stackprof
 
   def with_profile(env)
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_microsecond)
-    StackProf.start(mode: :wall, interval: @sampling_interval_microseconds)
+    StackProf.start(@stackprof_options)
     yield
   ensure
     StackProf.stop
