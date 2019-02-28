@@ -19,7 +19,7 @@ class Rack::Stackprof
     @sampling_interval_microseconds = options.fetch(:sampling_interval_microseconds)
     @last_profiled_at = nil
     @save_threshold = options.fetch(:save_threshold)
-    include_path = options.fetch(:profile_include_path)
+    include_path = options.fetch(:profile_include_path, nil)
     @profile_include_path = case include_path
                             when Regexp
                               include_path
@@ -29,7 +29,7 @@ class Rack::Stackprof
                               end
                             end
     @stackprof_options = {mode: :wall, interval: @sampling_interval_microseconds}.merge(stackprof_options)
-    StackProf::Middleware.path = options.fetch(:result_directory) # for `StackProf::Middleware.save`
+    StackProf::Middleware.path = options.fetch(:result_directory, nil) # for `StackProf::Middleware.save`
   end
 
   def call(env)
