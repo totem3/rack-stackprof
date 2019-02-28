@@ -6,6 +6,7 @@ class Rack::Stackprof
   # @param [Hash] options
   # @option options [Integer] :profile_interval_seconds
   # @option options [Integer] :sampling_interval_microseconds
+  # @option options [Integer] :save_threshold
   # @option options [String] :result_directory The directory to save the profiling results.
   # @option options [String] :profile_include_path
   #   Request paths to save profile. If this option is not nil nor empty,
@@ -17,6 +18,7 @@ class Rack::Stackprof
     @profile_interval_seconds = options.fetch(:profile_interval_seconds)
     @sampling_interval_microseconds = options.fetch(:sampling_interval_microseconds)
     @last_profiled_at = nil
+    @save_threshold = options.fetch(:save_threshold)
     include_path = options.fetch(:profile_include_path)
     @profile_include_path = case include_path
                             when Regexp
@@ -60,8 +62,11 @@ class Rack::Stackprof
     StackProf.stop
     finished_at = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_microsecond)
 
-    filename = result_filename(env: env, duration_milliseconds: (finished_at - started_at) / 1000)
-    StackProf::Middleware.save(filename)
+    duration_milliseconds = (finished_at - started_at) / 1000
+    if @save_threshold.nil? || duration_milliseconds >= @save_threshold
+      filename = result_filename(env: env, duration_milliseconds: duration_milliseconds)
+      StackProf::Middleware.save(filename)
+    end
   end
 
   # ex: "stackprof-20171004_175816-41860-GET_v1_users-0308ms.dump"
